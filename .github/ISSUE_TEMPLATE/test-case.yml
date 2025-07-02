@@ -7,7 +7,7 @@ body:
     id: target
     attributes:
       label: 테스트 대상
-      placeholder: 사용자 로그인 API
+      placeholder: 테스트 대상
     validations:
       required: true
 
@@ -20,9 +20,20 @@ body:
         - label: 통합 테스트
         - label: 모킹 테스트
         - label: 예외 케이스 테스트
+        - label: 기타
 
   - type: textarea
     id: details
     attributes:
       label: 상세 설명
-      description: 어떤 시나리오를 테스트해야 하는지 작성해주세요.
+      description: 어떤 시나리오를 테스트해야 하는지 작성
+  
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 심각도
+      options:
+        - 낮음
+        - 보통
+        - 높음
+        - 치명적
