@@ -1,0 +1,36 @@
+name: 버그 리포트
+description: 동작하지 않는 기능이나 에러를 제보해주세요.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 버그 요약
+      placeholder: 로그인 시 버튼 클릭 안됨
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 방법
+      description: 어떤 과정을 거치면 버그가 발생하는지 단계별로 작성해주세요.
+      placeholder: |
+        1. 로그인 페이지 접속  
+        2. 로그인 버튼 클릭  
+        3. 응답 없음
+    validations:
+      required: true
+
+  - type: input
+    id: expected
+    attributes:
+      label: 기대 동작
+      placeholder: 예: 로그인 후 메인 페이지로 이동
+
+  - type: input
+    id: env
+    attributes:
+      label: 환경 정보
+      placeholder: 브라우저, OS, 장치 등

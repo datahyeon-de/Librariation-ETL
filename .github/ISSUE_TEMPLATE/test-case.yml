@@ -1,0 +1,28 @@
+name: 테스트 케이스 작성
+description: 테스트 코드 추가 또는 보완 요청
+title: "[Test] "
+labels: ["test"]
+body:
+  - type: input
+    id: target
+    attributes:
+      label: 테스트 대상
+      placeholder: 사용자 로그인 API
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: types
+    attributes:
+      label: 테스트 종류
+      options:
+        - label: 단위 테스트
+        - label: 통합 테스트
+        - label: 모킹 테스트
+        - label: 예외 케이스 테스트
+
+  - type: textarea
+    id: details
+    attributes:
+      label: 상세 설명
+      description: 어떤 시나리오를 테스트해야 하는지 작성해주세요.
