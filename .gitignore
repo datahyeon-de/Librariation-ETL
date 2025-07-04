@@ -1,5 +1,5 @@
 .python-version
 .env
 logs/*
-etc/*
+docs/etc/*
 data/*
