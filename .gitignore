@@ -3,3 +3,5 @@
 logs/*
 docs/etc/*
 data/*
+*/__pycache__/*
+tests/*
