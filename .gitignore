@@ -1,7 +1,7 @@
 .python-version
+.pytest_cache
 .env
 logs/*
 docs/etc/*
 data/*
-*/__pycache__/*
-tests/*
+__pycache__

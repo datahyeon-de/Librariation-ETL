@@ -9,16 +9,15 @@ from config.config_setting import APISettingManager, DBSettingManager
 from tasks.extract.task_extract_loanitemsrch import extract_default_loan_item_data
 from tasks.transform.task_transform_loanitemsrch import transform_default_loan_item_data
 from tasks.load.task_load_loanitemsrch import load_default_loan_item_data
-from utils.dbutil import get_mysql_connection
+
+
 
 api_manager = APISettingManager()
 base_url = api_manager.get_api_base_url("loanItemSrch")
 params = api_manager.get_api_params("data4library", "loanItemSrch")
 
-print(base_url)
-print(params)
-
 db_manager = DBSettingManager()
+
 
 
 with DAG(
