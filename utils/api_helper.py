@@ -132,7 +132,7 @@ def run_serial_requests(
     return results, logs, len(logs) - len(failed_params), len(failed_params), failed_params
 
 
-def save_to_file(dag_id: str, data: List[Dict[str, Any]], execution_date: datetime, base_path: str = "data"):
+def save_to_file(dag_id: str, data: List[Dict[str, Any]], execution_date: datetime, base_path: str = "tests"):
     folder_path = os.path.join(base_path, dag_id)
     os.makedirs(folder_path, exist_ok=True)
     file_name = execution_date.strftime("%Y%m%d.json.gz")
@@ -143,7 +143,7 @@ def save_to_file(dag_id: str, data: List[Dict[str, Any]], execution_date: dateti
     logger.info(f"Saved data to {full_path}")
 
 
-def save_log_report(dag_id: str, execution_date: datetime, log_data: Dict[str, Any], base_path: str = "data"):
+def save_log_report(dag_id: str, execution_date: datetime, log_data: Dict[str, Any], base_path: str = "tests"):
     folder_path = os.path.join(base_path, dag_id, "logs")
     os.makedirs(folder_path, exist_ok=True)
     ts = execution_date.strftime("%Y%m%dT%H%M%SZ")

@@ -12,6 +12,8 @@ from utils.api_helper import (
 )
 
 class CustomAPIToFileOperator(BaseOperator):
+    template_fields = ("params_list", "api_key", "endpoint", "uri")
+    
     def __init__(
         self,
         uri: str,
