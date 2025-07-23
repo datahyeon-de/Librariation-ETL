@@ -38,4 +38,4 @@ with DAG(
         else:
             pprint(hot_trend_data)
         
-    hot_trend_task >> extract_hot_trend_data()                                                                                        
+    hot_trend_task >> extract_hot_trend_data()
