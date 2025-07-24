@@ -2,29 +2,26 @@ from airflow.models.baseoperator import BaseOperator
 from airflow.hooks.base import BaseHook
 from airflow.models import Variable
 from typing import Dict
+
 import requests
 import os
 import json
 import time
+
 from plugins.utils.log_helper import get_logger
+from plugins.utils.api_helper import find_key_value
 
 class Data4LibraryAPISaveToFileOperator(BaseOperator):
-    template_fields = ("save_path", "save_name")
+    template_fields = ()
     
-    def __init__(
-        self,
-        endpoint: str, 
-        api_params: Dict, 
-        save_path: str, 
-        save_name: str, 
-        **kwargs):
+    def __init__(self, endpoint: str, api_params: Dict, **kwargs):
         super().__init__(**kwargs)
+        
         self.http_conn_id = "data4library.kr"
         self.api_key = Variable.get("LIBRARY_API_KEY")
         self.endpoint = endpoint
         self.api_params = api_params
-        self.save_path = save_path
-        self.save_name = save_name
+        
         connection = BaseHook.get_connection(self.http_conn_id)
         self.base_url = f"http://{connection.host}:{connection.port}/api"
 
@@ -39,29 +36,57 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
             json.dump(result, f, ensure_ascii=False, indent=2)
 
     def execute(self, context):
-        dag_id = context['dag'].dag_id
-        ds_nodash = context['ds_nodash']
-        log_dir = f"/opt/airflow/files/data4library/{dag_id}/{ds_nodash}/log"
-        logger = get_logger(dag_id, log_dir, ds_nodash)
+        task_id = context['task'].task_id
+        execution_date = context['execution_date']  # pendulum datetime
+        exec_time_str = execution_date.format('YYYYMMDDTHHmmss')
+
+        # 경로 생성
+        base_dir = os.path.join(
+            "/opt/airflow/files/data4library",
+            self.endpoint,
+            exec_time_str,
+            task_id
+        )
+        os.makedirs(base_dir, exist_ok=True)
+
+        # 파일명 생성
+        base_filename = f"{self.endpoint}_{task_id}_{exec_time_str}"
+
+        # 데이터 파일 경로
+        data_file = os.path.join(base_dir, f"{base_filename}.json")
+
+        # 로그 파일 경로
+        log_file = os.path.join(base_dir, f"{base_filename}.log")
+
+        logger = get_logger(task_id, base_dir, exec_time_str, log_file=log_file)
+
         logger.info(f"Start {self.endpoint} API call")
         logger.info(f"API params: {self.api_params}")
+
         self.api_params["authKey"] = self.api_key
         self.api_params["format"] = "json"
+
         url = f"{self.base_url}/{self.endpoint}"
+
         start_time = time.time()
+
         try:
             result = self._api_get(url, self.api_params)
+            error_msg, error_flag = find_key_value(result, "error", max_depth=3)
+            if error_flag:
+                raise Exception(f"API 호출 오류: {error_msg}")
             logger.info(f"API call success")
         except Exception as e:
-            logger.error(f"API 호출 에러: {e}")
+            logger.error(f"API 호출 에러: {e} (url: {url})")
             raise
-        full_path = os.path.join(self.save_path, self.save_name)
+
         try:
-            self._save_to_file(result, full_path)
-            logger.info(f"Save to file success: {full_path}")
+            self._save_to_file(result, data_file)
+            logger.info(f"Save to file success: {data_file}")
         except Exception as e:
-            logger.error(f"파일 저장 에러: {e}")
+            logger.error(f"파일 저장 에러: {e} (경로: {data_file})")
             raise
+
         end_time = time.time()
         logger.info(f"End {self.endpoint} API call")
         logger.info(f"Time taken: {end_time - start_time} seconds")

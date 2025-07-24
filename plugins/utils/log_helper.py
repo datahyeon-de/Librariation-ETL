@@ -3,9 +3,12 @@ from datetime import datetime
 import logging
 import os
 
-def get_logger(name: str, log_dir: str, ds_nodash: str, level: int = logging.INFO) -> logging.Logger:
+def get_logger(name: str, log_dir: str, ds_nodash: str, level: int = logging.INFO, log_file: str = None) -> logging.Logger:
     os.makedirs(log_dir, exist_ok=True)
-    log_path = os.path.join(log_dir, f"{name}_{ds_nodash}.log")
+    if log_file is not None:
+        log_path = log_file
+    else:
+        log_path = os.path.join(log_dir, f"{name}_{ds_nodash}.log")
     logger = logging.getLogger(f"{name}_{ds_nodash}")
     logger.setLevel(level)
     # 핸들러 중복 방지: 파일핸들러가 이미 같은 파일을 바라보는지 체크
