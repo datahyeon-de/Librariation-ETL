@@ -18,7 +18,7 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
         super().__init__(**kwargs)
         
         self.http_conn_id = "data4library.kr"
-        self.api_key = Variable.get("LIBRARY_API_KEY")
+        self.api_key = Variable.get("LIBRAR_API_KEY")
         self.endpoint = endpoint
         self.api_params = api_params
         

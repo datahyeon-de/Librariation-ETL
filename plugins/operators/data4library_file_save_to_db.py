@@ -20,6 +20,7 @@ class Data4LibraryFileSaveToDBOperator(BaseOperator):
         self.base_dir = base_dir
 
     def execute(self, context: Context):
+        self.endpoint="{{ params.test_path }}"
         # 로그 설정
         run_time = pendulum.now().format('YYYYMMDDTHHmmss')
         log_dir = os.path.join(self.base_dir, self.endpoint, f"save_to_db_{run_time}")
