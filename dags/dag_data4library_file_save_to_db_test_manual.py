@@ -9,12 +9,12 @@ with DAG(
     start_date=pendulum.datetime(2025, 7, 22, tz="Asia/Seoul"),
     catchup=False,
     tags=['loanItemSrch', 'load', 'manual'],
-    params={"test_path":"loanItemSrch"}
+    params={"test_path": "loanItemSrch"}  # ✅ 기본값, 트리거 시 override 가능
 ) as dag:
 
     load_loan_item_srch_file_to_db_test = Data4LibraryFileSaveToDBOperator(
         task_id='load_loan_item_srch_file_to_db_test',
-        endpoint="loanItemSrch",
-        mysql_conn_id='librariation_dev',  
+        endpoint="{{ params.test_path }}",  # ✅ 템플릿 문법 사용
+        mysql_conn_id='librariation_dev',
         base_dir='/opt/airflow/files/data4library',
-    ) 
+    )
