@@ -4,10 +4,11 @@ from airflow.decorators import task
 import pendulum
 
 with DAG(
-    dag_id="dags_data4library_hotTrend_daily",
+    dag_id="dag_data4library_hotTrend_daily",
     start_date=pendulum.datetime(2025, 7, 22, tz="Asia/Seoul"),
     schedule_interval=None,
     catchup=False,
+    tags=['hotTrend', 'extract'],
     
 ) as dag:
     

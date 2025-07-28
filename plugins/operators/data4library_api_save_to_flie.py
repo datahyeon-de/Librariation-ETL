@@ -12,7 +12,7 @@ from plugins.utils.log_helper import get_logger
 from plugins.utils.api_helper import find_key_value
 
 class Data4LibraryAPISaveToFileOperator(BaseOperator):
-    template_fields = ()
+    template_fields = ("api_params",)  # api_params도 템플릿 필드로 지정
     
     def __init__(self, endpoint: str, api_params: Dict, **kwargs):
         super().__init__(**kwargs)
@@ -37,28 +37,28 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
 
     def execute(self, context):
         task_id = context['task'].task_id
-        execution_date = context['execution_date']  # pendulum datetime
-        exec_time_str = execution_date.format('YYYYMMDDTHHmmss')
+        # startDt, endDt를 api_params에서 추출 (템플릿 치환 후 값)
+        start_dt = self.api_params.get("startDt", "unknownStart")
+        end_dt = self.api_params.get("endDt", "unknownEnd")
 
-        # 경로 생성
+        # 경로 생성: startDt_endDt를 포함
         base_dir = os.path.join(
             "/opt/airflow/files/data4library",
             self.endpoint,
-            exec_time_str,
-            task_id
+            task_id,
+            f"{start_dt}_{end_dt}"
         )
         os.makedirs(base_dir, exist_ok=True)
 
         # 파일명 생성
-        base_filename = f"{self.endpoint}_{task_id}_{exec_time_str}"
-
+        base_filename = task_id
         # 데이터 파일 경로
         data_file = os.path.join(base_dir, f"{base_filename}.json")
 
         # 로그 파일 경로
         log_file = os.path.join(base_dir, f"{base_filename}.log")
 
-        logger = get_logger(task_id, base_dir, exec_time_str, log_file=log_file)
+        logger = get_logger(task_id, base_dir, f"{start_dt}_{end_dt}", log_file=log_file)
 
         logger.info(f"Start {self.endpoint} API call")
         logger.info(f"API params: {self.api_params}")
@@ -68,6 +68,7 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
 
         url = f"{self.base_url}/{self.endpoint}"
 
+        import time
         start_time = time.time()
 
         try:
