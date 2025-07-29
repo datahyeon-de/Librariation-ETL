@@ -1,6 +1,6 @@
-import re
-
 def extract_authors(text):
+    import re
+    
     if not text:
         return ""
     # 1. 제거할 키워드 및 괄호 제거

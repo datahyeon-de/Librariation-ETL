@@ -2,7 +2,7 @@ from datetime import datetime
 import logging
 import os
 
-def get_logger(name: str, log_dir: str, ds_nodash: str, level: int = logging.INFO, log_file: str = None) -> logging.Logger:
+def get_logger(name: str, log_dir: str, ds_nodash: str, level: int = logging.INFO, log_file: str = None, stream=False) -> logging.Logger:
     os.makedirs(log_dir, exist_ok=True)
     if log_file is not None:
         log_path = log_file
@@ -16,4 +16,10 @@ def get_logger(name: str, log_dir: str, ds_nodash: str, level: int = logging.INF
         fh = logging.FileHandler(log_path)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
+    
+    if stream:
+        sh = logging.StreamHandler()
+        sh.setFormatter(formatter)
+        logger.addHandler(sh)
+        
     return logger
