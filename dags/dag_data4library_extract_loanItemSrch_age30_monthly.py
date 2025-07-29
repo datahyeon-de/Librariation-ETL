@@ -4,15 +4,15 @@ from datetime import datetime
 import pendulum
 
 with DAG(
-    dag_id="dag_data4library_loanItemSrch_age30",
+    dag_id="dag_data4library_extract_loanItemSrch_age30_monthly",
     start_date=pendulum.datetime(2024, 1, 1, tz="Asia/Seoul"),
     schedule_interval="0 23 1 * *",
     catchup=True,
     tags=['loanItemSrch', 'extract'],
 ) as dag:
     
-    loan_item_srch_age30_task = Data4LibraryAPISaveToFileOperator(
-        task_id="loan_item_srch_age30_task",
+    task_extract_loan_item_srch_age30 = Data4LibraryAPISaveToFileOperator(
+        task_id="task_extract_loan_item_srch_age30",
         endpoint="loanItemSrch",
         api_params={
             "age": "30",
