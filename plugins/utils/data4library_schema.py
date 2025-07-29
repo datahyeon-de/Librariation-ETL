@@ -49,12 +49,17 @@ class Data4LibraryLoanItemValidator:
                     datetime.strptime(row[field], '%Y-%m-%d')
                 except Exception:
                     return False, f"날짜 포맷 오류: {field}={row[field]}"
-
+        
         # 길이 체크
         for field, maxlen in cls.MAX_LENGTHS.items():
             if row.get(field) and len(str(row[field])) > maxlen:
                 return False, f"{field} 길이 초과: {row[field]}"
 
+        # ✅ isbn13 필드 존재 및 형식 검사
+        isbn = row.get("isbn13")
+        if not isbn or not isbn.strip():
+            return False, "isbn13 누락 또는 공백"
+        
         # ✅ ID 정규식 체크
         if not cls.ID_PATTERN.match(row['id']):
             return False, f"id 포맷 오류: {row['id']}"
