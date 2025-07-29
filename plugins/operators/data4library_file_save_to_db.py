@@ -14,7 +14,7 @@ import pymysql
 
 
 class Data4LibraryFileSaveToDBOperator(BaseOperator):
-    template_fields = ("endpoint",)  # ✅ 템플릿 렌더링 적용 대상 필드 지정
+    template_fields = ("endpoint",)
 
     def __init__(self, endpoint: str, mysql_conn_id: str, base_dir: str = "/opt/airflow/files/data4library", **kwargs):
         super().__init__(**kwargs)
@@ -23,9 +23,11 @@ class Data4LibraryFileSaveToDBOperator(BaseOperator):
         self.base_dir = base_dir
 
     def execute(self, context: Context):
-        # ✅ self.endpoint 값은 템플릿이 자동 렌더링된 상태로 들어옴
         run_time = pendulum.now().format('YYYYMMDDTHHmmss')
-        log_dir = os.path.join(self.base_dir, self.endpoint, f"save_to_db_{run_time}")
+        save_date = pendulum.now().format('YYYYMMDD')
+
+        # 로그 디렉토리 archive 아래로 이동
+        log_dir = os.path.join(self.base_dir, 'archive', 'logs', 'save_to_db', self.endpoint.replace('/', '_'), f"save_to_db_{run_time}")
         os.makedirs(log_dir, exist_ok=True)
         log_file = os.path.join(log_dir, f"save_to_db_{run_time}.log")
         logger = get_logger(self.task_id, log_dir, run_time, log_file=log_file)
@@ -56,6 +58,7 @@ class Data4LibraryFileSaveToDBOperator(BaseOperator):
         fail_rows = []
         fail_msgs = []
         total_rows = 0
+
         for file_path in json_files:
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
@@ -65,10 +68,16 @@ class Data4LibraryFileSaveToDBOperator(BaseOperator):
                 endDt = req['endDt']
                 age = req['age']
                 docs = data['response']['docs']
+
                 for doc_wrap in docs:
                     doc = doc_wrap['doc']
                     yyyymm = startDt[:4] + startDt[5:7]
-                    id_val = f"{yyyymm}_{doc.get('isbn13', '')}_{doc.get('addition_symbol', '')}"
+                    id_val = f"{yyyymm}_{age}_{doc.get('isbn13')}"
+                    if doc.get('addition_symbol'):
+                        id_val += f"_{doc.get('addition_symbol')}"
+                    if doc.get('vol'):
+                        id_val += f"_{doc.get('vol')}"
+
                     row = {
                         'id': id_val,
                         'startDt': startDt,
@@ -88,6 +97,7 @@ class Data4LibraryFileSaveToDBOperator(BaseOperator):
                         'bookDtlUrl': doc.get('bookDtlUrl'),
                         'loan_count': int(doc.get('loan_count', 0)) if doc.get('loan_count') else None
                     }
+
                     total_rows += 1
                     valid, err = Data4LibraryLoanItemValidator.validate_row(row)
                     if valid:
@@ -123,12 +133,28 @@ class Data4LibraryFileSaveToDBOperator(BaseOperator):
         cursor.close()
         db.close()
 
-        logger.info(f"파일 압축 시작: {self.base_dir}/{self.endpoint}")
-        save_date = pendulum.now().format('YYYYMMDD')
-        zip_path = os.path.join(self.base_dir, self.endpoint, f"save_to_db_{save_date}.zip")
+        # 압축 파일 생성
+        zip_path = os.path.join(self.base_dir, 'archive', f"save_to_db_{self.endpoint.replace('/', '_')}_{save_date}.zip")
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for file_path in json_files:
-                arcname = os.path.relpath(file_path, os.path.join(self.base_dir, self.endpoint))
-                zipf.write(file_path, arcname)
+            for root, dirs, files in os.walk(os.path.join(self.base_dir, self.endpoint)):
+                for file in files:
+                    full_path = os.path.join(root, file)
+                    arcname = os.path.relpath(full_path, self.base_dir)
+                    zipf.write(full_path, arcname)
+            for root, dirs, files in os.walk(log_dir):
+                for file in files:
+                    full_path = os.path.join(root, file)
+                    arcname = os.path.relpath(full_path, self.base_dir)
+                    zipf.write(full_path, arcname)
+
         logger.info(f"압축 파일 생성 완료: {zip_path}")
+
+        # 원본 디렉토리 삭제
+        try:
+            import shutil
+            shutil.rmtree(os.path.join(self.base_dir, self.endpoint))
+            logger.info(f"원본 폴더 삭제 완료: {self.base_dir}/{self.endpoint}")
+        except Exception as e:
+            logger.warning(f"원본 폴더 삭제 실패: {e}")
+
         logger.info("전체 작업 완료")

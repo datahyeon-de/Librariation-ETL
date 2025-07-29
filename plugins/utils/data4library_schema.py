@@ -23,8 +23,9 @@ class Data4LibraryLoanItemValidator:
         'bookImageURL': 512,
         'bookDtlUrl': 512,
     }
-    ID_PATTERN_1 = re.compile(r'^[0-9]{6}_[0-9Xx]{10,13}_.+$')
-    ID_PATTERN_2 = re.compile(r'^[0-9]{6}_[0-9Xx]{10,13}')
+
+    # ✅ 새로운 ID 포맷 정규식 (yyyymm_age_isbn13_[추가심볼]_[vol])
+    ID_PATTERN = re.compile(r'^[0-9]{6}_[0-9]{1,3}_[0-9Xx]{10,13}(?:_[^_]+){0,2}$')
 
     @classmethod
     def validate_row(cls, row: Dict) -> Tuple[bool, Optional[str]]:
@@ -32,23 +33,30 @@ class Data4LibraryLoanItemValidator:
         for field in cls.REQUIRED_FIELDS:
             if not row.get(field):
                 return False, f"필수값 누락: {field}"
-        # 타입/포맷 체크
+
+        # 정수 타입 체크
         for field in cls.INT_FIELDS:
             if row.get(field) is not None:
                 try:
                     int(row[field])
                 except Exception:
                     return False, f"정수형 변환 실패: {field}={row[field]}"
+
+        # 날짜 포맷 체크
         for field in cls.DATE_FIELDS:
             if row.get(field):
                 try:
                     datetime.strptime(row[field], '%Y-%m-%d')
                 except Exception:
                     return False, f"날짜 포맷 오류: {field}={row[field]}"
+
+        # 길이 체크
         for field, maxlen in cls.MAX_LENGTHS.items():
             if row.get(field) and len(str(row[field])) > maxlen:
                 return False, f"{field} 길이 초과: {row[field]}"
-        # id 포맷 체크
-        if not (cls.ID_PATTERN_1.match(row['id']) or cls.ID_PATTERN_2.match(row['id'])):
+
+        # ✅ ID 정규식 체크
+        if not cls.ID_PATTERN.match(row['id']):
             return False, f"id 포맷 오류: {row['id']}"
+
         return True, None
