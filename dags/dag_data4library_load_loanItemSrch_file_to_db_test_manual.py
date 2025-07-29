@@ -3,7 +3,7 @@ from plugins.operators.data4library_file_save_to_db import Data4LibraryFileSaveT
 import pendulum
 
 with DAG(
-    dag_id='dag_data4library_file_save_to_db_test_manual',
+    dag_id='dag_data4library_load_loanItemSrch_file_to_db_test_manual',
     description='loanItemSrch DB 적재 테스트 매뉴얼',
     schedule_interval=None,
     start_date=pendulum.datetime(2025, 7, 22, tz="Asia/Seoul"),

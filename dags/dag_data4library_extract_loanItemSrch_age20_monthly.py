@@ -7,7 +7,7 @@ with DAG(
     dag_id="dag_data4library_extract_loanItemSrch_age20_monthly",
     start_date=pendulum.datetime(2024, 1, 1, tz="Asia/Seoul"),
     schedule_interval="0 23 1 * *",
-    catchup=True,
+    catchup=False,
     tags=['loanItemSrch', 'extract'],
 ) as dag:
     

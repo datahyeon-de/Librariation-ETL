@@ -46,6 +46,7 @@ class Data4LibraryUpdateBookDescriptionOperator(BaseOperator):
         logger.info(f"수집 대상 도서 수: {len(books)}")
         
         api_key = Variable.get("LIBRARY_API_KEY")
+        print(api_key)
         http_conn_id = "data4library.kr"
         connection = BaseHook.get_connection(http_conn_id)
         endpoint = "srchDtlList"
@@ -59,16 +60,18 @@ class Data4LibraryUpdateBookDescriptionOperator(BaseOperator):
                 book_id = book['book_id']
                 
                 params = {
-                    "apiKey": api_key,
+                    "authKey": api_key,
                     "isbn13": isbn13,
                     "format": "json"
                 }
                 
                 response = requests.get(full_url, params=params)
+                print(response.url)
                 response.raise_for_status()
                 
                 data = response.json()
-                description = data['response']['detail']['book']['description']
+                print(data)
+                description = data["response"]["detail"][0]["book"]["description"]
                 logger.info(f"도서 정보 수집 성공: {isbn13}")
                 
                 return (book_id, description)

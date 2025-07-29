@@ -4,7 +4,7 @@ from plugins.operators.data4library_api_save_to_file_manual import Data4LibraryA
 import pendulum
 
 with DAG(
-    dag_id="manual_data4library_loanItemSrch",
+    dag_id="dag_data4library_extract_loanItemSrch_manual",
     start_date=pendulum.datetime(2024, 1, 1, tz="Asia/Seoul"),
     schedule_interval=None,
     catchup=False,
