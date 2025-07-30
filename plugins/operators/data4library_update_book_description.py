@@ -8,6 +8,7 @@ from plugins.utils.api_helper import find_key_value
 
 import requests
 import pendulum
+import html
 
 class Data4LibraryUpdateBookDescriptionOperator(BaseOperator):
     def __init__(self, mysql_conn_id: str, log_level: str = None, **kwargs):
@@ -158,7 +159,7 @@ class Data4LibraryUpdateBookDescriptionOperator(BaseOperator):
             for result in successful_results:
                 book_id, description = result
                 try:
-                    cursor.execute(update_sql, (description[:1000], book_id))
+                    cursor.execute(update_sql, (html.unescape(description[:1000]), book_id))
                     updated_count += 1
                     logger.debug(f"도서 업데이트 완료: book_id={book_id}")
                 except Exception as e:
