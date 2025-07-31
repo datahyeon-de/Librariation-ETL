@@ -114,7 +114,7 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
         log_save_file = f"{self.sig_keys}_{task_id}_{run_time}.log" 
         
         # 성능 매트릭 저장 파일명 생성
-        matrix_save_file = f"matrix_{self.sig_keys}_{task_id}_{run_time}.json"
+        matrix_save_file = f"matrix_{task_id}_{run_time}.json"
         
         # 성능 매트릭 저장 경로
         matrix_save_path = os.path.join(log_save_dir, matrix_save_file)
