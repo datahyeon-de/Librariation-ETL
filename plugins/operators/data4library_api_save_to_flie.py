@@ -25,7 +25,7 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
         connection = BaseHook.get_connection(self.http_conn_id)
         self.base_url = f"http://{connection.host}:{connection.port}/api"
 
-    def _api_get(self, url: str, params: Dict):
+    def _call_api(self, url: str, params: Dict):
         response = requests.get(url, params=params)
         response.raise_for_status()
         return response.json()

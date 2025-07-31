@@ -2,7 +2,11 @@ from datetime import datetime
 import logging
 import os
 
-def get_logger(name: str, log_dir: str, ds_nodash: str, level: str = None, log_file: str = None, stream=False) -> logging.Logger:
+def get_logger(
+    name: str, log_dir: str, log_file: str,
+    level: str = None, stream=False
+    ) -> logging.Logger:
+    
     # 로깅 레벨 매핑 딕셔너리
     level_mapping = {
         'DEBUG': logging.DEBUG,
@@ -15,29 +19,33 @@ def get_logger(name: str, log_dir: str, ds_nodash: str, level: str = None, log_f
     # 로깅 레벨 결정
     if level is None:
         log_level = logging.INFO  # 기본값
+        
     else:
         log_level = level_mapping.get(level.upper(), logging.INFO)
     
     os.makedirs(log_dir, exist_ok=True)
-    if log_file is not None:
-        log_path = log_file
-    else:
-        log_path = os.path.join(log_dir, f"{name}.log")
-    logger = logging.getLogger(f"{name}_{ds_nodash}")
+    
+    # 로그 이름 생성
+    logger = logging.getLogger(name)
+    
+    if logger.handlers:
+        return logger
+    
+    # 로그 레벨 설정
     logger.setLevel(log_level)
     
     # 포맷터 정의
     formatter = logging.Formatter("[%(asctime)s] [%(levelname)s] %(message)s")
     
-    # 핸들러 중복 방지: 파일핸들러가 이미 같은 파일을 바라보는지 체크
-    if not any(isinstance(h, logging.FileHandler) and getattr(h, 'baseFilename', None) == os.path.abspath(log_path) for h in logger.handlers):
-        fh = logging.FileHandler(log_path)
-        fh.setFormatter(formatter)
-        logger.addHandler(fh)
+    # 파일 핸들러 생성
+    fh = logging.FileHandler(f'{log_dir}/{log_file}', encoding='utf-8')
+    fh.setFormatter(formatter)
     
-    if stream:
-        sh = logging.StreamHandler()
-        sh.setFormatter(formatter)
-        logger.addHandler(sh)
-        
+    sh = logging.StreamHandler()
+    sh.setFormatter(formatter)
+    
+    logger.addHandler(fh)
+    logger.addHandler(sh)
+    
     return logger
+    
