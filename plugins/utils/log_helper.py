@@ -28,9 +28,6 @@ def get_logger(
     # 로그 이름 생성
     logger = logging.getLogger(name)
     
-    if logger.handlers:
-        return logger
-    
     # 로그 레벨 설정
     logger.setLevel(log_level)
     
@@ -45,7 +42,7 @@ def get_logger(
     sh.setFormatter(formatter)
     
     logger.addHandler(fh)
-    logger.addHandler(sh)
+    logger.addHandler(sh) if stream else None
     
     return logger
     

@@ -3,7 +3,7 @@ from airflow.hooks.base import BaseHook
 from airflow.models import Variable
 from airflow.utils.context import Context
 from typing import Dict, List, Any, Optional
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from plugins.utils.log_helper import get_logger
 from plugins.utils.api_helper import find_key_value
 
@@ -20,7 +20,7 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
     def __init__(
         self, endpoint: str, api_params: Dict, sig_params: List[str], 
         mt_option: bool = False, mt_params: Optional[Dict] = None, 
-        log_level: str = None, **kwargs):
+        log_level: str = None, log_stream: bool = False, **kwargs):
         super().__init__(**kwargs)
         
         # 기본 설정
@@ -32,6 +32,7 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
         self.mt_max_workers = 8 if mt_params is None else mt_params.get("max_workers", 8) # 멀티 쓰레드 최대 쓰레드 수
         self.mt_call_late = None if mt_params is None else mt_params.get("call_late", 0.25) # 멀티 쓰레드 쓰레드 대기 시간
         self.log_level = log_level # 로그 레벨 설정
+        self.log_stream = log_stream # 로그 스트림 옵션
         
         self.sig_params = sig_params
         self.sig_keys = "_".join(sig_params)  # 특정 파라미터 설정
@@ -111,7 +112,7 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
         log_save_dir = f"/opt/airflow/files/data4library/logs/{self.endpoint}"
         
         # 로그 저장 파일명 생성
-        log_save_file = f"{self.sig_keys}_{task_id}_{run_time}.log" 
+        log_save_file = f"{task_id}_{self.sig_keys}_{run_time}.log" 
         
         # 성능 매트릭 저장 파일명 생성
         matrix_save_file = f"matrix_{task_id}_{run_time}.json"
@@ -123,7 +124,7 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
         logger = get_logger(
             name=task_id, log_dir=log_save_dir, log_file=log_save_file,
             level=self.log_level, 
-            stream=True if self.mt_option else False
+            stream= True if self.mt_option else False
             )
         
         logger.info(f"[Start] Task: {task_id}")
@@ -189,35 +190,33 @@ class Data4LibraryAPISaveToFileOperator(BaseOperator):
                 
                 with ThreadPoolExecutor(max_workers=self.mt_max_workers) as executor:
                     futures = [executor.submit(self._call_api, self.url, data) for data in input_data]
-                    results = [future.result() for future in futures]
                     
-                for sig_name, result in results:
-                    error_msg, error_flag = find_key_value(result, "error", max_depth=3)
-                    
-                    if error_flag:
-                        logger.error(f"[FAIL] Call API: {sig_name} - Message: {error_msg}")
-                        total_api_call_fail_count += 1
-                        continue
-                    
-                    logger.info(f"[SUCCESS] Call API: {sig_name}")
-                    
-                    total_api_call_success_count += 1
-                    
-                    try:
-                        result_save_path = base_result_save_path.replace('.json', f'_{sig_name}.json')
+                    for future in as_completed(futures):
+                        sig_name, result = future.result()
+                        error_msg, error_flag = find_key_value(result, "error", max_depth=3)
                         
-                        self._save_to_file(result, result_save_path)
+                        if error_flag:
+                            logger.error(f"[FAIL] Call API: {sig_name} - Message: {error_msg}")
+                            total_api_call_fail_count += 1
+                            continue
                         
-                        logger.info(f"[SUCCESS] Save to File: {sig_name}")
+                        logger.info(f"[SUCCESS] Call API: {sig_name}")
                         
-                        total_file_save_success_count += 1
-                    
-                    except Exception as e:
-                        logger.error(f"[FAIL] Save to File: {sig_name} - Message: {e}")
+                        total_api_call_success_count += 1
                         
-                        total_file_save_fail_count += 1
+                        try:
+                            result_save_path = base_result_save_path.replace('.json', f'_{sig_name}.json')
+                            
+                            self._save_to_file(result, result_save_path)
+                            
+                            logger.info(f"[SUCCESS] Save to File: {sig_name}")
+                            
+                            total_file_save_success_count += 1
                         
-                        continue
+                        except Exception as e:
+                            logger.error(f"[FAIL] Save to File: {sig_name} - Message: {e}")
+                            
+                            total_file_save_fail_count += 1
                 
             except Exception as e:
                 logger.error(f"[FAIL] Multi Threading Call API - Message: {e}")

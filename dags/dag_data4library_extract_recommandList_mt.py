@@ -1,6 +1,6 @@
 from airflow import DAG
 from airflow.decorators import task
-from plugins.operators.data4library_api_save_to_flie_test import Data4LibraryAPISaveToFileOperator
+from plugins.operators.extract_api_save_to_flie import Data4LibraryAPISaveToFileOperator
 from airflow.hooks.base import BaseHook
 from plugins.utils.db_utils import get_mysql_connection
 
@@ -8,11 +8,11 @@ import pendulum
 
     
 with DAG(
-    dag_id="dag_data4library_extract_keyword_mt_test",
-    start_date=pendulum.datetime(2025, 7, 31, tz="Asia/Seoul"),
+    dag_id="dag_data4library_extract_recommandList_mt",
+    start_date=pendulum.datetime(2025, 8, 2, tz="Asia/Seoul"),
     schedule_interval=None,
     catchup=False,
-    tags=['keyword', 'extract', 'test'],
+    tags=['recommandList', 'extract',],
 ) as dag:
     
     @task(task_id="get_isbn13_list")
@@ -22,30 +22,30 @@ with DAG(
         cursor = db.cursor()
         
         sql = """
-            SELECT 
-                isbn13
-            FROM 
-                book
-            ;
+            SELECT DISTINCT b.isbn13
+            FROM book b
+            WHERE b.updated_at > (
+                SELECT COALESCE(MAX(br.updated_at), '1900-01-01 00:00:00') 
+                FROM book_recommendations br
+            )
         """
         cursor.execute(sql)
         result = cursor.fetchall()
         return result
     
-    task_extract_keyword_mt_test = Data4LibraryAPISaveToFileOperator(
-        task_id="task_extract_keyword_mt_test",
-        endpoint="keywordList",
+    task_extract_recommandList_mt = Data4LibraryAPISaveToFileOperator(
+        task_id="task_extract_recommandList_mt",
+        endpoint="recommandList",
         api_params={
             # "isbn13": "", 내부에서 처리
-            "additionalYN": "N"
         },
         sig_params = ["isbn13"],
         mt_option=True,
         mt_params={
-            "max_workers": 10,
+            "max_workers": 20,
             "call_late": 0.25,
         },
-        log_level="DEBUG",
+        log_level="INFO",
     )
     
-    get_isbn13_list() >> task_extract_keyword_mt_test
+    get_isbn13_list() >> task_extract_recommandList_mt
